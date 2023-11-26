@@ -62,11 +62,11 @@ concurrencpp::result<void> sortCorotine(
         "sortCouroutine merging result\n");
 
 
-std:inplace_merge(
-    values.begin(), values.begin() + middle, values.end());
+    std:inplace_merge(
+        values.begin(), values.begin() + middle, values.end());
 
-std::cout << std::format("Thread {} : sortCoourtine done", id());
-co_return;
+    std::cout << std::format("Thread {} : sortCoourtine done", id());
+    co_return;
 
 }
 
