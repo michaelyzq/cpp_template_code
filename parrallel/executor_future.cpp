@@ -5,7 +5,7 @@
 #include <thread>
 #include <Vector>
 #include <future>
-
+#include <cmath>
 using namespace std::chrono_literals;
 int main(){
     using namespace std;
@@ -15,18 +15,29 @@ int main(){
     constexpr auto parallelism_level = 4;
     executor ex{parallelism_level};
 
-    auto future = run_task(ex, [&daily_price](){{
+    auto future = run_task(ex, [&daily_price]()
+                           {
         auto average = 0.0;
         for(auto p:daily_price)
             average+=p;
         average /=daily_price.size();
-        return average;
-    }})->get_future();
+        return average; 
+        })->then(
+        [&daily_price](double average)
+        {
+            auto sum_squares = 0.0;
+            for (auto price : daily_price)
+            {
+                auto distance = price - average;
+                sum_squares += distance * distance;
+            }
+            return (sqrt(sum_squares / (daily_price.size() - 1)));
+        })->then(
+            [](double stddev){
+                  std::cout << "Resoult:" << stddev << std::endl; 
+            }
+        )->get_future();
 
-
-    std::cout<<"Executing ....."<<std::endl;
-    std::cout<<"Average:"<<future.get()<<std::endl;
-    cout<<"Finshed "<<std::endl;
-
-
+    std::cout << "Executing..." << std::endl;
+    future.wait();
 }

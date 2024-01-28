@@ -30,14 +30,39 @@ class task: public executable{
     using result_t = result;
 
     template<NullaryFunction fn_t>
-    explicit task(fn_t &&fn):fn_{std::forward<fn_t>(fn)}{
-
+    explicit task(executor &ex, fn_t &&fn)
+    :fn_{std::forward<fn_t>(fn)}
+    ,executor_(ex)
+    {
     }
 
     [[nodiscard]]
     auto get_future(){
-        std::cout<<"getting fugure"<<std::endl;
+        std::cout<<"getting future \n"<<std::endl;
         return promise_.get_future();
+    }
+
+    template<UnaryFunction<result> function_type>
+    auto then(const function_type &what){
+        using r = typename std::invoke_result<function_type, result_t>::type;
+        auto tsk = std::make_shared<task<r>>(
+            this->executor_,
+            [what, parent{shared_from_this()}]()mutable{
+                auto future = static_cast<task<result_t>&>(*parent).get_future();
+                return what(future.get());
+            }
+        );
+        {
+            std::scoped_lock lock{mutex_};
+            if(! has_finished){
+                next_ = tsk;
+                return tsk;
+            }
+        }
+
+        executor_.schedule(tsk);
+        next_ = tsk;
+        return tsk;
     }
 
     private:
@@ -48,6 +73,11 @@ class task: public executable{
             }catch(...){
 
             }
+
+            std::scoped_lock lock_;
+            has_finished = true;
+            if (next_)
+                next_->execute();
         }
 
         void execute_impl()
@@ -57,6 +87,7 @@ class task: public executable{
                 fn_();
                 promise_.set_value();
             }
+            else
             {
                 promise_.set_value(fn_());
             }
@@ -64,6 +95,13 @@ class task: public executable{
 
         std::function<result_t(void)> fn_;
         std::promise<result_t> promise_;
+
+        executable_ptr next_;
+        std::mutex mutex_;
+        
+
+        executor &executor_;
+        bool has_finished = false;
 };
 
 template<typename result>
@@ -71,7 +109,7 @@ using task_ptr=std::shared_ptr<task<result>>;
 
 template<NullaryFunction function_type>
 inline auto run_task(executor &ex, function_type&&fn){
-    auto t = std::make_shared<task<decltype(fn())>>(std::forward<function_type>(fn));
+    auto t = std::make_shared<task<decltype(fn())>>(ex, std::forward<function_type>(fn));
     ex.schedule(t);
     return t;
 }
