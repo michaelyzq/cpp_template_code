@@ -4,7 +4,7 @@
 #include <vector>
 #include <tuple>
 #include "print_utils.hpp"
-
+//http://evlm.stuba.sk/~partner2/DBfiles/Numericalanalysis/Linear%20systems%20of%20equations/solving_systems_with_tridiagonal_matrix_Tompson_EN.pdf
 //Left
 // 0	0	0	0	0
 // 1	-2	1	0	0
