@@ -1,3 +1,4 @@
+#pragma once
 #include <iostream>
 #include <vector>
 #include <string_view>
@@ -5,7 +6,9 @@
 #include <format>
 #include <cstdio>
 #include <tuple>
-
+#include <concepts>
+#include <format>
+#include <sstream>
 template<typename...Args>
 void print(const std::string_view fmt_str, Args&&...args){
    auto fmt_args{
@@ -36,8 +39,28 @@ constexpr void print(const std::vector<T> v) {
 	endl(std::cout);
 }
 
-
 template <typename T>
+std::string to_string(const std::vector<T> v){
+   std::stringstream ss;
+   std::string temp ;
+   ss<< "[";
+   for (auto i = v.begin(); i !=v.end(); ++i)
+   {
+      ss<< (i<v.end()-1 ? std::format("{}, ",*i) :std::format("{}, ]",*i));
+   }
+      //temp =  i<v.end()-1 ? std::format("{}, ",*i) :std::format("{}, ]",*i);
+
+   return ss.str();
+}
+
+template<typename T>
+void print(const std::string_view fmt_st, const std::vector<T> v) {
+   print(fmt_st, to_string<T>(v));
+}
+
+
+
+template<typename T>
 void print(T t){
     std::cout<< t<<std::endl;
 }
